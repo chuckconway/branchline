@@ -514,7 +514,7 @@ try {
   await tooOld.evaluate(() => window.dispatchEvent(new Event('focus')))
   await tooOld.locator('[data-git-problem]').waitFor({ state: 'detached' })
   console.log('ok  once git works the warning clears when the window is focused again')
-  await tooOld.locator('button', { hasText: 'Try again' }).click()
+  // The same focus event reloads the repository view, so nothing needs clicking.
   await tooOld.locator('.row[data-sha]').first().waitFor()
   console.log('ok  and the tab that was kept loads without reopening it')
 
