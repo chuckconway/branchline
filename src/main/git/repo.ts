@@ -63,7 +63,8 @@ const emptyTrees = new Map<string, string>()
 async function emptyTree(repo: RepoInfo): Promise<string> {
   let sha = emptyTrees.get(repo.commonDir)
   if (!sha) {
-    sha = (await git(repo.path, ['hash-object', '-t', 'tree', '/dev/null'])).trim()
+    // From empty input rather than /dev/null, which only some platforms have.
+    sha = (await git(repo.path, ['hash-object', '-t', 'tree', '--stdin'], { input: '' })).trim()
     emptyTrees.set(repo.commonDir, sha)
   }
   return sha
@@ -262,6 +263,16 @@ async function pushTarget(repo: RepoInfo, branch: string): Promise<string> {
 
 const shq = (s: string): string => `'${s.replace(/'/g, `'\\''`)}'`
 
+/**
+ * An "editor" command for git that overwrites the file it is asked to edit with `source`.
+ * git runs editors through a shell on every platform (its own bundled one on Windows), and
+ * this uses only shell built-ins, so it does not depend on cp or cat being on the PATH.
+ */
+function replaceWith(source: string): string {
+  const path = shq(source.replace(/\\/g, '/'))
+  return `f() { while IFS= read -r line || [ -n "$line" ]; do printf '%s\\n' "$line"; done < ${path} > "$1"; }; f`
+}
+
 /** The lines of git's output that say why something did not apply. */
 function failureDetail(e: unknown): string {
   if (!(e instanceof GitError)) return String(e)
@@ -321,14 +332,20 @@ async function rewrite(repo: RepoInfo, what: string, base: string | null, todo: 
   try {
     const todoFile = join(dir, 'todo')
     await writeFile(todoFile, todo.join('\n') + '\n')
-    const env: Record<string, string> = { GIT_SEQUENCE_EDITOR: `cp ${shq(todoFile)}` }
+    const env: Record<string, string> = { GIT_SEQUENCE_EDITOR: replaceWith(todoFile) }
     if (message !== undefined) {
       const messageFile = join(dir, 'message')
       await writeFile(messageFile, message + '\n')
-      env.GIT_EDITOR = `cp ${shq(messageFile)}`
+      env.GIT_EDITOR = replaceWith(messageFile)
     }
     await allOrNothing(repo, what, ['rebase', '--abort'], () =>
-      git(repo.path, ['rebase', '-i', '--autostash', '--no-autosquash', ...(base ? [base] : ['--root'])], { write: true, env, timeoutMs: NETWORK_TIMEOUT })
+      // cleanup=whitespace: a reworded message is taken as written, so a line that starts
+      // with "#" (an issue number, a Markdown heading) is kept instead of read as a comment.
+      git(repo.path, ['-c', 'commit.cleanup=whitespace', 'rebase', '-i', '--autostash', '--no-autosquash', ...(base ? [base] : ['--root'])], {
+        write: true,
+        env,
+        timeoutMs: NETWORK_TIMEOUT
+      })
     )
   } finally {
     await rm(dir, { recursive: true, force: true })

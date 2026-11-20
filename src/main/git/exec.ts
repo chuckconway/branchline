@@ -26,49 +26,109 @@ export interface GitOptions {
   env?: Record<string, string>
 }
 
-// Apps launched from Finder get a minimal PATH; make Homebrew's git reachable too.
-const PATH = ['/opt/homebrew/bin', '/usr/local/bin', process.env.PATH ?? '/usr/bin:/bin'].join(':')
+const isMac = process.platform === 'darwin'
+const isWindows = process.platform === 'win32'
+
+// Apps launched from Finder or a Linux desktop get a minimal PATH; make the usual install
+// locations reachable. Windows is left alone: its PATH variable is spelled "Path", and adding
+// a second spelling would give child processes two conflicting copies.
+const EXTRA_PATH = isMac ? ['/opt/homebrew/bin', '/usr/local/bin'] : isWindows ? [] : ['/usr/local/bin']
+const PATH_ENV: Record<string, string> = EXTRA_PATH.length ? { PATH: [...EXTRA_PATH, process.env.PATH ?? '/usr/bin:/bin'].join(':') } : {}
 
 const MAX_OUTPUT = 256 * 1024 * 1024
+
+/** Oldest git whose commands and output formats this app relies on (March 2021). */
+export const MIN_GIT: [number, number] = [2, 31]
 
 // macOS's /usr/bin/git is a shim that refuses to run whenever Xcode wants its license
 // accepted again, which happens after Xcode installs and updates. The Command Line Tools'
 // own copy keeps working, so fall back to it rather than go blind.
 const CLT_DIR = '/Library/Developer/CommandLineTools'
 const CLT_GIT = `${CLT_DIR}/usr/bin/git`
-const CANDIDATES = ['git', CLT_GIT]
+const CANDIDATES = isMac ? ['git', CLT_GIT] : ['git']
 
-function probe(bin: string): Promise<string | null> {
+const INSTALL_HINT = isMac
+  ? 'Install it by running "xcode-select --install" in Terminal, or with Homebrew.'
+  : isWindows
+    ? 'Install Git for Windows from https://git-scm.com/download/win.'
+    : "Install it with your distribution's package manager."
+
+/** git cannot be run at all (missing, blocked, or too old). No repository is at fault. */
+export class GitUnavailableError extends GitError {
+  constructor(message: string) {
+    super(message, null, '')
+    this.name = 'GitUnavailableError'
+  }
+}
+
+interface Probe {
+  version?: string
+  missing?: boolean
+  error?: string
+}
+
+function probe(bin: string): Promise<Probe> {
   return new Promise((resolve) => {
-    const child = spawn(bin, ['--version'], { env: { ...process.env, PATH } })
+    const child = spawn(bin, ['--version'], { env: { ...process.env, ...PATH_ENV } })
     const out: Buffer[] = []
     child.stdout.on('data', (d: Buffer) => out.push(d))
     child.stderr.on('data', (d: Buffer) => out.push(d))
-    child.on('error', (e) => resolve(e.message))
-    child.on('close', (code) => resolve(code === 0 ? null : Buffer.concat(out).toString('utf8').trim() || `exit code ${code}`))
+    child.on('error', (e: NodeJS.ErrnoException) => resolve(e.code === 'ENOENT' ? { missing: true } : { error: e.message }))
+    child.on('close', (code) => {
+      const text = Buffer.concat(out).toString('utf8').trim()
+      resolve(code === 0 ? { version: text } : { error: text || `exit code ${code}` })
+    })
   })
 }
 
-let binary: Promise<string> | null = null
+/** "git version 2.45.1.windows.1" -> [2, 45] */
+export function parseGitVersion(text: string): [number, number] | null {
+  const m = /(\d+)\.(\d+)/.exec(text)
+  return m ? [Number(m[1]), Number(m[2])] : null
+}
 
-/** The first git that actually runs. A failure is not cached, so fixing git fixes the app. */
-export function gitBinary(): Promise<string> {
-  if (!binary) {
-    const found = (async () => {
-      let firstError = ''
+export const isSupportedGit = ([major, minor]: [number, number]): boolean =>
+  major > MIN_GIT[0] || (major === MIN_GIT[0] && minor >= MIN_GIT[1])
+
+let found: Promise<{ bin: string; version: string }> | null = null
+
+/** The first git that runs and is new enough. A failure is not cached, so fixing git fixes the app. */
+function findGit(): Promise<{ bin: string; version: string }> {
+  if (!found) {
+    const search = (async () => {
+      let problem = ''
+      let tooOld = ''
       for (const bin of CANDIDATES) {
-        const error = await probe(bin)
-        if (error === null) return bin
-        firstError ||= error
+        const result = await probe(bin)
+        if (result.version) {
+          const version = parseGitVersion(result.version)
+          if (version && isSupportedGit(version)) return { bin, version: version.join('.') }
+          tooOld ||= result.version
+        } else if (!result.missing) {
+          problem ||= result.error ?? ''
+        }
       }
-      throw new GitError(`git is not usable on this machine: ${firstError}`, null, firstError)
+      if (tooOld) throw new GitUnavailableError(`Branchline needs git ${MIN_GIT.join('.')} or newer, and this machine has "${tooOld}". Update git and try again.`)
+      if (problem) throw new GitUnavailableError(`git is installed but will not run: ${problem}`)
+      throw new GitUnavailableError(`git was not found. ${INSTALL_HINT}`)
     })()
-    found.catch(() => {
-      if (binary === found) binary = null
+    search.catch(() => {
+      if (found === search) found = null
     })
-    binary = found
+    found = search
   }
-  return binary
+  return found
+}
+
+export const gitBinary = (): Promise<string> => findGit().then((g) => g.bin)
+
+/** Whether git can be used, for telling the user before they open anything. */
+export async function gitInfo(): Promise<{ ok: true; version: string } | { ok: false; error: string }> {
+  try {
+    return { ok: true, version: (await findGit()).version }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
 }
 
 export async function git(cwd: string, args: string[], opts: GitOptions = {}): Promise<string> {
@@ -76,7 +136,7 @@ export async function git(cwd: string, args: string[], opts: GitOptions = {}): P
   return new Promise((resolve, reject) => {
     const env: NodeJS.ProcessEnv = {
       ...process.env,
-      PATH,
+      ...PATH_ENV,
       LC_ALL: 'C',
       GIT_TERMINAL_PROMPT: '0',
       GIT_EDITOR: 'true',
