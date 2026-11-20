@@ -27,3 +27,8 @@ export function splitPath(path: string): [dir: string, base: string] {
 }
 
 export const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`
+
+/** What each platform calls "show this in the file manager". */
+export function revealLabel(platform: string): string {
+  return platform === 'darwin' ? 'Reveal in Finder' : platform === 'win32' ? 'Show in Explorer' : 'Show in file manager'
+}

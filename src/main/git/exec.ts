@@ -45,7 +45,8 @@ export const MIN_GIT: [number, number] = [2, 31]
 // own copy keeps working, so fall back to it rather than go blind.
 const CLT_DIR = '/Library/Developer/CommandLineTools'
 const CLT_GIT = `${CLT_DIR}/usr/bin/git`
-const CANDIDATES = isMac ? ['git', CLT_GIT] : ['git']
+// BRANCHLINE_GIT names one git to use, for people with several installed and for tests.
+const CANDIDATES = process.env.BRANCHLINE_GIT ? [process.env.BRANCHLINE_GIT] : isMac ? ['git', CLT_GIT] : ['git']
 
 const INSTALL_HINT = isMac
   ? 'Install it by running "xcode-select --install" in Terminal, or with Homebrew.'

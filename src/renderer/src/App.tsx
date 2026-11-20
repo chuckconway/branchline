@@ -35,6 +35,14 @@ export function App(): ReactNode {
   const [dropping, setDropping] = useState(false)
   const [theme, toggleTheme] = useTheme()
   const [zoom, setZoom] = useState(1)
+  const [gitProblem, setGitProblem] = useState<string | null>(null)
+  const checkGit = useCallback(() => void window.api.gitInfo().then((info) => setGitProblem(info.ok ? null : info.error)), [])
+  useEffect(() => {
+    checkGit()
+    // Fixing git happens in another app, so look again whenever this window gets the focus back.
+    window.addEventListener('focus', checkGit)
+    return () => window.removeEventListener('focus', checkGit)
+  }, [checkGit])
 
   useEffect(() => {
     void window.api.getZoom().then(setZoom)
@@ -156,6 +164,14 @@ export function App(): ReactNode {
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
         </button>
       </div>
+      {gitProblem && (
+        <div className="notice error" role="alert" data-git-problem>
+          <pre>{gitProblem}</pre>
+          <button className="btn small" onClick={checkGit}>
+            Check again
+          </button>
+        </div>
+      )}
 
       {state.tabs.map((path) => {
         const active = !showWelcome && state.active === path

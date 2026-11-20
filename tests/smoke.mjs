@@ -1,7 +1,7 @@
 // End-to-end check of the built app: launches Electron on a scripted repository, drives the
 // real UI, and saves screenshots to tests/.artifacts/shots. Run `npm run build` first.
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { _electron as electron } from 'playwright-core'
@@ -27,16 +27,18 @@ const marked = async (page) => (await page.locator('.dl.add').first().locator('.
 const gitIn = (cwd, ...args) =>
   execFileSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null' } })
 
+const reveal = process.platform === 'darwin' ? 'Reveal in Finder' : process.platform === 'win32' ? 'Show in Explorer' : 'Show in file manager'
+
 // Launched from Finder the app never has DEVELOPER_DIR, so it must find a working git itself
 // even when this harness needed the variable to build the fixture.
 const appEnv = { ...process.env }
 delete appEnv.DEVELOPER_DIR
 
 // SMOKE_APP points at a packaged binary; otherwise the build in out/ runs under Electron.
-const launch = () =>
+const launch = (extra = {}) =>
   electron.launch({
-    ...(process.env.SMOKE_APP ? { executablePath: process.env.SMOKE_APP, args: [] } : { args: [root] }),
-    env: { ...appEnv, BRANCHLINE_USER_DATA: join(artifacts, 'userdata'), BRANCHLINE_OPEN: repo }
+    ...(process.env.SMOKE_APP ? { executablePath: process.env.SMOKE_APP, args: process.env.SMOKE_NO_SANDBOX ? ['--no-sandbox'] : [] } : { args: [root, ...(process.env.SMOKE_NO_SANDBOX ? ['--no-sandbox'] : [])] }),
+    env: { ...appEnv, BRANCHLINE_USER_DATA: join(artifacts, 'userdata'), BRANCHLINE_OPEN: repo, ...extra }
   })
 let app = await launch()
 const errors = []
@@ -375,7 +377,7 @@ try {
   await tree('repo-smoke-wt').click({ button: 'right' })
   check(await item('Remove worktree').isDisabled(), 'a worktree with uncommitted changes cannot be removed')
   check((await item('Remove worktree').getAttribute('title')).includes('1 uncommitted change'), 'and the menu says why')
-  check(await item('Reveal in Finder').isEnabled(), 'the worktree menu offers Reveal in Finder')
+  check(await item(reveal).isEnabled(), `the worktree menu offers ${reveal}`)
   await shot(page, 'worktree-menu')
   await item('Copy path').click()
   check((await app.evaluate(({ clipboard }) => clipboard.readText())) === smokeTree, 'Copy path puts the worktree folder on the clipboard')
@@ -487,6 +489,40 @@ try {
   await reopened.locator('.zoom-level').click()
   await reopened.waitForFunction(() => document.querySelector('.zoom-level')?.textContent === '100%')
   check(Math.abs((await zoomFactor(app)) - 1) < 0.001, 'clicking the percentage returns to normal size')
+
+  // --- git missing or too old: say so, and keep the tabs for when it is fixed
+  await app.close()
+  app = await launch({ BRANCHLINE_GIT: join(artifacts, 'no-such-git') })
+  const noGit = await app.firstWindow()
+  await noGit.waitForSelector('[data-git-problem]')
+  check((await noGit.locator('[data-git-problem]').textContent()).includes('git was not found'), 'a missing git is reported in plain words')
+  check((await noGit.locator('.tab').count()) === 1, 'and the open tab is kept')
+  await shot(noGit, 'git-missing')
+
+  const oldGit = join(artifacts, 'old-git')
+  writeFileSync(oldGit, '#!/bin/sh\necho "git version 2.20.1"\n')
+  chmodSync(oldGit, 0o755)
+  await app.close()
+  app = await launch({ BRANCHLINE_GIT: oldGit })
+  const tooOld = await app.firstWindow()
+  await tooOld.waitForSelector('[data-git-problem]')
+  check((await tooOld.locator('[data-git-problem]').textContent()).includes('needs git 2.31 or newer'), 'a git that is too old is reported with the version needed')
+  await shot(tooOld, 'git-too-old')
+
+  // Fix git while the app is open: the warning clears on return, and the kept tab loads.
+  writeFileSync(oldGit, '#!/bin/sh\nexec git "$@"\n')
+  await tooOld.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await tooOld.locator('[data-git-problem]').waitFor({ state: 'detached' })
+  console.log('ok  once git works the warning clears when the window is focused again')
+  await tooOld.locator('button', { hasText: 'Try again' }).click()
+  await tooOld.locator('.row[data-sha]').first().waitFor()
+  console.log('ok  and the tab that was kept loads without reopening it')
+
+  await app.close()
+  app = await launch()
+  const healthy = await app.firstWindow()
+  await healthy.locator('.row[data-sha]').first().waitFor()
+  check((await healthy.locator('[data-git-problem]').count()) === 0, 'with a working git there is no warning and the tab loads')
   console.log(`\nAll checks passed. Screenshots: ${shots}`)
 } catch (e) {
   const page = app.windows()[0]

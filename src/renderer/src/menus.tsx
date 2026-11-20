@@ -27,7 +27,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { WIP, type Action, type Commit, type Ref, type ResetMode, type Worktree } from '../../shared/types'
-import { plural, shortSha } from './format'
+import { plural, revealLabel, shortSha } from './format'
 import { Modal, type ConfirmState, type MenuItem } from './ui'
 import type { OpenFile, RepoModel } from './useRepo'
 
@@ -330,7 +330,7 @@ export function worktreeMenu(tree: Worktree, changes: number | undefined, missin
       disabled: tree.isCurrent || tree.bare || tree.prunable,
       reason: tree.isCurrent ? 'Already open in this tab' : 'There is no folder to open'
     },
-    { label: 'Reveal in Finder', icon: icons.reveal, onSelect: () => void window.api.showInFinder(tree.path), disabled: tree.prunable, reason: 'Its folder is gone' },
+    { label: revealLabel(window.api.platform), icon: icons.reveal, onSelect: () => void window.api.showInFinder(tree.path), disabled: tree.prunable, reason: 'Its folder is gone' },
     {
       label: 'Copy path',
       icon: icons.copy,
@@ -598,7 +598,7 @@ export function fileMenu(f: OpenFile, m: RepoModel, repo: string): MenuItem[] {
       }
     },
     {
-      label: 'Reveal in Finder',
+      label: revealLabel(window.api.platform),
       icon: icons.reveal,
       disabled: deleted,
       reason: 'The file no longer exists',

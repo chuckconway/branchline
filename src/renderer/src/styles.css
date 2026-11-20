@@ -41,7 +41,8 @@
   --tok-type: #953800;
   --tok-name: #116329;
 
-  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
   color-scheme: light;
 }
 
@@ -103,7 +104,7 @@ body,
 }
 
 body {
-  font: 12.5px/1.4 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  font: 12.5px/1.4 var(--sans);
   background: var(--bg);
   color: var(--text);
   overflow: hidden;
@@ -323,9 +324,13 @@ code,
   align-items: stretch;
   flex: none;
   height: 38px;
-  padding-left: 84px;
   background: var(--chrome);
   border-bottom: 1px solid var(--border);
+}
+
+/* macOS draws its window buttons over the tab bar, which also serves as the title bar. */
+:root[data-platform='darwin'] .tabbar {
+  padding-left: 84px;
   -webkit-app-region: drag;
 }
 
@@ -1356,7 +1361,7 @@ code,
 .diff-note {
   padding: 10px 14px;
   color: var(--text-dim);
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--sans);
 }
 
 .diff-note.error {
@@ -1929,7 +1934,7 @@ code,
   border-right: 1px solid var(--border);
   background: transparent;
   color: var(--text-dim);
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--sans);
   font-size: 11.5px;
   text-align: left;
   white-space: nowrap;
