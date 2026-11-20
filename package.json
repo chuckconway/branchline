@@ -1,6 +1,7 @@
 {
   "name": "branchline",
   "productName": "Branchline",
+  "desktopName": "branchline.desktop",
   "version": "0.1.0",
   "description": "A fast, local git graph viewer and history tool. No account, no subscription.",
   "private": true,
@@ -12,11 +13,13 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "smoke": "node tests/smoke.mjs",
-    "dist": "electron-vite build && electron-builder --mac dir --arm64 && codesign --force --deep --sign - \"release/mac-arm64/Branchline.app\""
+    "dist": "electron-vite build && electron-builder",
+    "dist:local": "electron-vite build && electron-builder --mac dir --arm64 -c.mac.identity=null -c.mac.notarize=false && codesign --force --deep --sign - release/mac-arm64/Branchline.app"
   },
   "build": {
     "appId": "app.branchline.desktop",
     "productName": "Branchline",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "files": [
       "out/**/*",
       "package.json"
@@ -24,11 +27,32 @@
     "directories": {
       "output": "release"
     },
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "onlyLoadAppFromAsar": true
+    },
     "mac": {
       "category": "public.app-category.developer-tools",
-      "identity": null,
-      "target": "dir",
       "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "notarize": true,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
       "extendInfo": {
         "CFBundleDocumentTypes": [
           {
@@ -41,6 +65,35 @@
           }
         ]
       }
+    },
+    "linux": {
+      "category": "Development",
+      "icon": "build/icon.png",
+      "syncDesktopName": true,
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false
     }
   },
   "devDependencies": {

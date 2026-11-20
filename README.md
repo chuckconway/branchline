@@ -52,7 +52,7 @@ Still deliberately missing: discarding file changes, force-push, deleting tags.
 
 ```sh
 npm install
-npm run dist                       # builds release/mac-arm64/Branchline.app
+npm run dist:local                 # builds release/mac-arm64/Branchline.app (unsigned)
 open -a "Branchline" /path/to/repo
 ```
 
