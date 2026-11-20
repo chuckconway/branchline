@@ -240,6 +240,15 @@ describe('editing history in place', () => {
     ;[c, , a] = sh('log', '-n3', '--format=%H').split('\n')
   })
 
+  it('keeps a reworded message exactly as written, including lines that start with #', async () => {
+    const message = 'Add a, again\n\n#42 is the issue\n# A heading\n\n  indented line'
+    await runAction(repo, { type: 'reword', sha: a, message })
+    expect(sh('log', '-1', '--format=%B', 'HEAD~2').trimEnd()).toBe(message)
+    ;[c, , a] = sh('log', '-n3', '--format=%H').split('\n')
+    await runAction(repo, { type: 'reword', sha: a, message: 'Add a, reworded' })
+    ;[c, , a] = sh('log', '-n3', '--format=%H').split('\n')
+  })
+
   it('moves a commit up and down', async () => {
     const before = tree()
     await runAction(repo, { type: 'move', sha: a, direction: 'up' })
