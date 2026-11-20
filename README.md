@@ -1,31 +1,54 @@
 # Branchline
 
-A local git graph viewer for macOS. No account, no subscription, no network calls other than
-your own `git fetch`, `pull` and `push`.
+A local git graph viewer and history tool: no account, no subscription, no telemetry.
 
-It is built for looking at a repository that something else (you, or a coding agent) is
-changing: the view refreshes on its own when commits, branches, stashes or working files
-change, and it never takes git's index lock while it reads.
+![The commit graph](docs/images/graph.png)
+
+## Install
+
+Branchline runs the `git` already on your machine, and needs git 2.31 or newer. If git is
+missing or too old, the app says so at the top of the window.
+
+- **macOS:** download the `.dmg` for Apple Silicon (`arm64`) or Intel (`x64`) from the
+  Releases page, open it, and drag Branchline to Applications.
+- **Linux:** download the `.AppImage` from the Releases page, then `chmod +x` it and run it.
+  It needs GTK 3, which desktop distributions already have.
+- **Windows:** not supported yet; builds are experimental.
+
+To build it yourself, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## What it does
 
 - Commit graph with lanes, branch and tag labels, stashes, and a row for uncommitted changes.
 - Sidebar of local branches, remotes, worktrees, stashes and tags, with a filter.
 - Commit details and per-file diffs, unified or side by side, with syntax colouring.
+
+  ![A side-by-side diff](docs/images/diff.png)
+
 - File history (following renames) and blame for any changed file.
+
+  ![Blame for a file](docs/images/blame.png)
+
 - Stage, unstage and commit; fetch, pull (fast-forward only), push or publish; check out a
   branch or commit; create a branch; stash and pop.
 - Right-click a commit (or use the More button) to cherry-pick, revert, rebase onto it, reset
   to it, edit its message, drop it, move it, create a worktree from it, copy its SHA or its
   link on the remote, save it as a patch, or tag it (optionally annotated, optionally pushed).
+
+  ![The commit menu](docs/images/menu.png)
+
 - Right-click a branch, in the sidebar or on its label in the graph, to check it out, copy
   its name, or delete it locally, on the remote, or both.
 - One tab per repository. A linked worktree opens as its own tab.
 - Text size: the controls at the right of the tab bar zoom the whole window from 80% to 200%,
   and the level is remembered. Columns and button labels give way as space runs out.
-- Worktrees show how many uncommitted changes each holds. Right-click one to open it, reveal
-  it in Finder, copy its path, or remove it (with its branch, if you ask). Worktrees whose
-  folder has gone are flagged, and one click prunes them.
+- Worktrees show how many uncommitted changes each holds. Right-click one to open it, show it
+  in the file manager, copy its path, or remove it (with its branch, if you ask). Worktrees
+  whose folder has gone are flagged, and one click prunes them.
+
+Everything has a button or a menu entry; nothing needs a keyboard shortcut.
+
+## What it will and will not do to your repository
 
 Two rules shape the operations that change history:
 
@@ -46,36 +69,38 @@ A worktree is only ever removed when it is clean; there is no force option. A wo
 folder is gone still holds its branch until it is pruned, which is why pruning is what makes
 those branches deletable.
 
-Still deliberately missing: discarding file changes, force-push, deleting tags.
+Branchline never does these:
 
-## Use
+- discard changes to a file,
+- force-push,
+- delete a tag.
+
+The only network calls are your own `git fetch`, `pull` and `push`.
+
+## Built for watching agents work
+
+Branchline is for looking at a repository that something else (you, or a coding agent) is
+changing.
+
+- The view refreshes on its own when commits, branches, stashes or working files change.
+- Reading never takes git's index lock, so it cannot get in the way of a commit that is
+  happening in the same repository.
+- Each worktree shows how many uncommitted changes it holds, so you can see which agents have
+  work in progress.
+
+## Open from a terminal
 
 ```sh
-npm install
-npm run dist:local                 # builds release/mac-arm64/Branchline.app (unsigned)
-open -a "Branchline" /path/to/repo
+open -a Branchline /path/to/repo                  # macOS
+./Branchline-*.AppImage /path/to/repo             # Linux: a folder as the first argument
 ```
 
-Opening works from the Open button, by dropping a folder on the window or the Dock icon, or
-from a terminal with `open -a` as above.
+Opening also works from the Open button, and by dropping a folder on the window or, on macOS,
+on the Dock icon.
 
 ## Develop
 
-```sh
-npm run dev        # run with hot reload
-npm test           # unit tests: git parsing, graph layout, every action (uses a scripted repo)
-npm run build && npm run smoke     # drives the real app end to end, saves screenshots
-```
-
-Two optional checks against real repositories, both read-only:
-
-```sh
-BRANCHLINE_REAL_REPOS=/path/a:/path/b npx vitest run tests/real.test.ts
-SMOKE_REPO=/path/a npm run smoke
-```
-
-To smoke-test the packaged app instead of the dev build, set
-`SMOKE_APP="release/mac-arm64/Branchline.app/Contents/MacOS/Branchline"`.
+Setup, the test commands and the rules for changes are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Layout
 
@@ -88,3 +113,7 @@ tests/         unit tests, fixture-repository builder, end-to-end smoke test
 ```
 
 The design notes are in `docs/design.md`.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

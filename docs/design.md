@@ -13,7 +13,7 @@ did.
   call other than the user's own `git fetch/pull/push`.
 - Discarding file changes, force-push, tag delete.
 - Merge-conflict resolution UI and a full interactive-rebase editor.
-- Windows/Linux packaging. macOS arm64 only for now.
+- Windows support. It is built, but nothing is verified there yet (see Platforms).
 
 ## Stack
 
@@ -72,7 +72,7 @@ so pass-through edges are straight verticals and each row can be drawn independe
 Right-clicking a commit offers checkout, create worktree, create branch, cherry-pick, rebase
 onto, reset (soft/mixed/hard), revert, edit message, drop, move up/down, copy SHA, copy link
 on the remote, and create patch. Right-clicking a changed file offers diff, file history,
-blame, stage/unstage, copy path and reveal in Finder. Every menu is also reachable from a
+blame, stage/unstage, copy path and reveal in the file manager. Every menu is also reachable from a
 visible button (More on the commit panel, the row's "…" button, tabs on the file view).
 
 - **All or nothing.** With no conflict UI, an operation that stops midway is aborted
@@ -102,7 +102,7 @@ a checkbox pushes it.
 
 ## Worktree actions (added after v1)
 
-Right-clicking a worktree offers open in a tab, reveal in Finder, copy path and remove; the
+Right-clicking a worktree offers open in a tab, reveal in the file manager, copy path and remove; the
 section shows a Prune control whenever a worktree's folder is missing.
 
 - **Remove is never forced.** The backend counts the worktree's uncommitted changes and
@@ -126,6 +126,27 @@ they bypass the saved setting.
 Zooming in makes the window narrower in CSS pixels, so the layout adapts by width: side
 panels are capped as a share of the window, toolbar buttons drop their labels, and the graph
 drops its SHA, author and date columns in that order (container queries on `.graph-pane`).
+
+## Platforms
+
+macOS and Linux are supported. Windows is built but unsupported until CI passes there.
+
+- **Finding git.** git is looked for per platform (`src/main/git/exec.ts`): on macOS the
+  `PATH` plus the Homebrew locations, with the Command Line Tools' copy as a fallback; on
+  Linux the `PATH` plus `/usr/local/bin`; on Windows the `PATH` as it is. `BRANCHLINE_GIT`
+  names one git to use instead. It must be 2.31 or newer. When no usable git is found the
+  window says so in a banner, tabs from the last session are kept, and each one resolves on
+  demand once git works again.
+- **The rebase editor.** History edits hand git a shell-builtin function as the editor rather
+  than a program such as `cp`, because git runs editors through a shell on every platform,
+  including its own bundled `sh` on Windows.
+- **The UI.** The page learns its platform from `window.api.platform`, which is copied to
+  `data-platform` on the root element; CSS keys off that. Only macOS draws window buttons
+  over the tab bar, so only there is the tab bar inset and draggable. Labels that name the
+  file manager come from `revealLabel` in `format.ts`.
+- **Packaging.** `package.json` defines a signed, notarized `.dmg` and `.zip` for macOS, an
+  `.AppImage` for Linux and an NSIS installer for Windows. `.github/workflows/release.yml`
+  builds all three from a `v*` tag and attaches them to a draft release.
 
 ## Errors
 
