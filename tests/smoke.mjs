@@ -499,24 +499,27 @@ try {
   check((await noGit.locator('.tab').count()) === 1, 'and the open tab is kept')
   await shot(noGit, 'git-missing')
 
-  const oldGit = join(artifacts, 'old-git')
-  writeFileSync(oldGit, '#!/bin/sh\necho "git version 2.20.1"\n')
-  chmodSync(oldGit, 0o755)
-  await app.close()
-  app = await launch({ BRANCHLINE_GIT: oldGit })
-  const tooOld = await app.firstWindow()
-  await tooOld.waitForSelector('[data-git-problem]')
-  check((await tooOld.locator('[data-git-problem]').textContent()).includes('needs git 2.31 or newer'), 'a git that is too old is reported with the version needed')
-  await shot(tooOld, 'git-too-old')
+  // The stand-in for an old git is a shell script, which Windows cannot run directly.
+  if (process.platform !== 'win32') {
+    const oldGit = join(artifacts, 'old-git')
+    writeFileSync(oldGit, '#!/bin/sh\necho "git version 2.20.1"\n')
+    chmodSync(oldGit, 0o755)
+    await app.close()
+    app = await launch({ BRANCHLINE_GIT: oldGit })
+    const tooOld = await app.firstWindow()
+    await tooOld.waitForSelector('[data-git-problem]')
+    check((await tooOld.locator('[data-git-problem]').textContent()).includes('needs git 2.31 or newer'), 'a git that is too old is reported with the version needed')
+    await shot(tooOld, 'git-too-old')
 
-  // Fix git while the app is open: the warning clears on return, and the kept tab loads.
-  writeFileSync(oldGit, '#!/bin/sh\nexec git "$@"\n')
-  await tooOld.evaluate(() => window.dispatchEvent(new Event('focus')))
-  await tooOld.locator('[data-git-problem]').waitFor({ state: 'detached' })
-  console.log('ok  once git works the warning clears when the window is focused again')
-  // The same focus event reloads the repository view, so nothing needs clicking.
-  await tooOld.locator('.row[data-sha]').first().waitFor()
-  console.log('ok  and the tab that was kept loads without reopening it')
+    // Fix git while the app is open: the warning clears on return, and the kept tab loads.
+    writeFileSync(oldGit, '#!/bin/sh\nexec git "$@"\n')
+    await tooOld.evaluate(() => window.dispatchEvent(new Event('focus')))
+    await tooOld.locator('[data-git-problem]').waitFor({ state: 'detached' })
+    console.log('ok  once git works the warning clears when the window is focused again')
+    // The same focus event reloads the repository view, so nothing needs clicking.
+    await tooOld.locator('.row[data-sha]').first().waitFor()
+    console.log('ok  and the tab that was kept loads without reopening it')
+  }
 
   await app.close()
   app = await launch()

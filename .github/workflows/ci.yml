@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # Windows is not supported yet; its results are information, not a gate.
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx install-electron
+      - run: git config --global user.name CI && git config --global user.email ci@example.com
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Smoke test (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke
+        env:
+          SMOKE_NO_SANDBOX: '1'
+      - name: Smoke test (macOS, Windows)
+        if: runner.os != 'Linux'
+        run: npm run smoke
+      - name: Keep screenshots when something fails
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshots-${{ matrix.os }}
+          path: tests/.artifacts/shots
+          # The folder sits under a dot-directory, which is skipped unless asked for.
+          include-hidden-files: true

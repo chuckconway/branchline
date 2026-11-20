@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            args: --mac
+          - os: ubuntu-latest
+            args: --linux
+          - os: windows-latest
+            args: --win
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx install-electron
+      - run: npx electron-vite build
+      - name: Package
+        run: npx electron-builder ${{ matrix.args }} --publish never
+        env:
+          # macOS signing and notarization. Without these secrets the Mac build is unsigned.
+          CSC_LINK: ${{ secrets.MAC_CERTIFICATE_P12_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages-${{ matrix.os }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.AppImage
+            release/*.exe
+          if-no-files-found: error
+
+  publish:
+    name: Draft release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: packages
+          merge-multiple: true
+      - name: Create a draft release with every package attached
+        run: gh release create "$GITHUB_REF_NAME" packages/* --repo "$GITHUB_REPOSITORY" --draft --generate-notes --title "Branchline $GITHUB_REF_NAME"
+        env:
+          GH_TOKEN: ${{ github.token }}
