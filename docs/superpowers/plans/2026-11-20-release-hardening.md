@@ -12,7 +12,7 @@
 
 ## Read this first
 
-**Where things stand.** The repository is at `~/Projects/branchline` (the folder keeps its old name; the product is Branchline). Work happens on branch `release-prep`. Two commits exist:
+**Where things stand.** The repository is at `~/Projects/branchline`. Work happens on branch `release-prep`. Two commits exist:
 
 - `65a7fe8` the whole app, renamed to Branchline, MIT licensed (on `main` and `release-prep`).
 - `cb7fa8b` (only on `release-prep`) git discovery is per-platform, git 2.31+ is required, the rebase "editor" no longer uses `cp`, and the empty tree no longer needs `/dev/null`.
@@ -46,7 +46,7 @@ Environment variables the app and tests understand: `BRANCHLINE_USER_DATA` (sett
 - This Mac has a `Developer ID Application` certificate and `notarytool`. Notarization still needs credentials only the owner can create.
 - All dependencies are permissively licensed. No personal details are in tracked files.
 - Git on Windows prints paths with forward slashes, and runs editors and hooks through its own bundled `sh`.
-- The old build is installed at `/Applications/Git Navigator.app` and running, with settings in `~/Library/Application Support/Git Navigator/`. Task 8 replaces it.
+- Branchline is installed at `/Applications/Branchline.app` and running, with settings in `~/Library/Application Support/Branchline/`. Task 8 installs the new build over it.
 
 **File map.**
 
@@ -664,9 +664,9 @@ git add -A && git commit -m "Write the README for users; add contributor notes"
 
 ---
 
-### Task 8: Replace the installed app on this machine
+### Task 8: Install the new build on this machine
 
-The owner is running the old build. Settings are carried over by copying the folder before first launch.
+The owner is running the installed copy. Settings live in `~/Library/Application Support/Branchline/` and are left alone.
 
 - [ ] **Step 1: Build**
 
@@ -677,8 +677,7 @@ rm -rf release && npm run dist:local
 - [ ] **Step 2: Swap**
 
 ```bash
-osascript -e 'tell application id "com.local.gitnavigator" to quit'; sleep 2
-[ -d "$HOME/Library/Application Support/Branchline" ] || cp -R "$HOME/Library/Application Support/Git Navigator" "$HOME/Library/Application Support/Branchline"
+osascript -e 'tell application id "app.branchline.desktop" to quit'; sleep 2
 ditto release/mac-arm64/Branchline.app /Applications/Branchline.app
 codesign --verify --deep /Applications/Branchline.app && echo "signature ok"
 ```
@@ -693,15 +692,7 @@ pgrep -fl "/Applications/Branchline.app/Contents/MacOS/Branchline"
 python3 -c "import json,os; d=json.load(open(os.path.expanduser('~/Library/Application Support/Branchline/state.json'))); print('tabs:', len(d['tabs']))"
 ```
 
-Expected: `All checks passed`, a running process, and `tabs: 2` (the owner's two open repositories carried over). Delete `release/` before launching: macOS otherwise may open that copy instead of the installed one.
-
-- [ ] **Step 4: Remove the old app, and ask before removing old settings**
-
-```bash
-rm -rf "/Applications/Git Navigator.app"
-```
-
-Leave `~/Library/Application Support/Git Navigator/` in place and mention it in the final report; deleting the owner's old settings is their call.
+Expected: `All checks passed`, a running process, and the same number of tabs the owner had open before. Delete `release/` before launching: macOS otherwise may open that copy instead of the installed one.
 
 ---
 
@@ -724,5 +715,5 @@ git log --oneline main..release-prep
   2. The notarization commands from Task 5 Step 5, and the five repository secrets `release.yml` reads.
   3. Whether `app.branchline.desktop` is the bundle id they want. It cannot change after the first public release without orphaning people's settings.
   4. Whether the LICENSE should name them instead of "Branchline contributors".
-  5. Whether to merge `release-prep` into `main`, and whether to delete the old settings folder.
+  5. Whether to merge `release-prep` into `main`.
 - Not in this plan: in-app update checks, a Homebrew cask, a real Windows port.
