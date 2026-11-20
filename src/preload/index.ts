@@ -17,6 +17,8 @@ function subscribe<T>(channel: string, cb: (value: T) => void): () => void {
 
 const api: Api = {
   getState: () => call('app:getState'),
+  platform: process.platform,
+  gitInfo: () => call('app:gitInfo'),
   pickRepo: () => call('app:pickRepo'),
   openRepo: (path) => call('app:openRepo', path),
   closeRepo: (path) => call('app:closeRepo', path),

@@ -190,6 +190,10 @@ export type OpenResult = { ok: true; path: string; state: AppState } | { ok: fal
 
 export interface Api {
   getState(): Promise<AppState>
+  /** 'darwin', 'win32' or 'linux'. */
+  platform: string
+  /** Whether git can be run at all, so the app can say so before anything is opened. */
+  gitInfo(): Promise<{ ok: true; version: string } | { ok: false; error: string }>
   pickRepo(): Promise<OpenResult | null>
   openRepo(path: string): Promise<OpenResult>
   closeRepo(path: string): Promise<AppState>

@@ -1,7 +1,7 @@
 import { BrowserWindow, Menu, app, clipboard, dialog, ipcMain, nativeTheme, shell, type MenuItemConstructorOptions } from 'electron'
 import { existsSync, statSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { dirname, join, normalize } from 'node:path'
 import type { Action, AppState, DiffSpec, OpenResult } from '../shared/types'
 import { stepZoom } from '../shared/zoom'
 import {
@@ -20,8 +20,11 @@ import {
   worktreeChanges,
   type RepoInfo
 } from './git/repo'
+import { GitUnavailableError, gitInfo } from './git/exec'
 import { Store } from './store'
 import { RepoWatcher } from './watch'
+
+const isMac = process.platform === 'darwin'
 
 // Tests point this at a scratch directory so they never touch real settings.
 if (process.env.BRANCHLINE_USER_DATA) app.setPath('userData', process.env.BRANCHLINE_USER_DATA)
@@ -51,9 +54,14 @@ function changeZoom(direction: 1 | -1 | 0): number {
   return factor
 }
 
-function requireRepo(path: unknown): RepoInfo {
-  const repo = typeof path === 'string' ? repos.get(path) : undefined
-  if (!repo) throw new Error('That repository is not open.')
+async function requireRepo(path: unknown): Promise<RepoInfo> {
+  if (typeof path !== 'string' || !store.data.tabs.includes(path)) throw new Error('That repository is not open.')
+  let repo = repos.get(path)
+  if (!repo) {
+    // A tab restored while git could not run: resolve it now that someone is asking.
+    repo = await resolveRepo(path)
+    register(repo)
+  }
   return repo
 }
 
@@ -115,8 +123,10 @@ async function restoreTabs(): Promise<void> {
       const info = await resolveRepo(path)
       register(info)
       kept.push(info.path)
-    } catch {
-      // Leave it in recents; it may come back.
+    } catch (e) {
+      // git itself cannot run: keep the tab, it resolves on demand once git works again.
+      // Otherwise the folder is gone or is no longer a repository; it stays in recents.
+      if (e instanceof GitUnavailableError) kept.push(path)
     }
   }
   store.data.tabs = kept
@@ -165,6 +175,7 @@ function handle(channel: string, fn: Handler): void {
 
 function registerIpc(): void {
   handle('app:getState', () => appState())
+  handle('app:gitInfo', () => gitInfo())
   handle('app:pickRepo', () => pickRepo())
   handle('app:openRepo', (path: string) => openRepo(String(path)))
   handle('app:closeRepo', (path: string) => closeRepo(String(path)))
@@ -182,25 +193,25 @@ function registerIpc(): void {
   handle('app:showInFinder', (path: string) => {
     // Only reveal folders that belong to a repository the user opened, or one of its worktrees.
     const known = [...repos.values()].some((r) => path === r.path || path.startsWith(r.path + '/'))
-    if (known || store.data.recents.includes(path) || isKnownWorktree(path)) shell.showItemInFolder(path)
+    if (known || store.data.recents.includes(path) || isKnownWorktree(path)) shell.showItemInFolder(normalize(path))
   })
   handle('app:getZoom', () => store.data.zoom)
   handle('app:stepZoom', (direction: number) => changeZoom(direction > 0 ? 1 : direction < 0 ? -1 : 0))
   handle('app:copyText', (text: string) => clipboard.writeText(String(text)))
-  handle('repo:snapshot', (repo: string, limit: number, known: string | null) => {
+  handle('repo:snapshot', async (repo: string, limit: number, known: string | null) => {
     const n = Math.max(1, Math.min(Number(limit) || 1, 500_000))
-    return loadSnapshot(requireRepo(repo), n, typeof known === 'string' ? known : null)
+    return loadSnapshot(await requireRepo(repo), n, typeof known === 'string' ? known : null)
   })
-  handle('repo:commitDetail', (repo: string, sha: string, isStash: boolean) => commitDetail(requireRepo(repo), String(sha), Boolean(isStash)))
-  handle('repo:diff', (repo: string, spec: DiffSpec) => diff(requireRepo(repo), spec))
-  handle('repo:action', (repo: string, action: Action) => runAction(requireRepo(repo), action))
-  handle('repo:isPublished', (repo: string, sha: string) => isPublished(requireRepo(repo), String(sha)))
-  handle('repo:uniqueCommits', (repo: string, refNames: string[]) => uniqueCommits(requireRepo(repo), Array.isArray(refNames) ? refNames.map(String) : []))
-  handle('repo:worktreeChanges', (repo: string) => worktreeChanges(requireRepo(repo)))
-  handle('repo:blame', (repo: string, rev: string | null, path: string) => blame(requireRepo(repo), rev ? String(rev) : null, String(path)))
-  handle('repo:fileHistory', (repo: string, rev: string | null, path: string) => fileHistory(requireRepo(repo), rev ? String(rev) : null, String(path)))
+  handle('repo:commitDetail', async (repo: string, sha: string, isStash: boolean) => commitDetail(await requireRepo(repo), String(sha), Boolean(isStash)))
+  handle('repo:diff', async (repo: string, spec: DiffSpec) => diff(await requireRepo(repo), spec))
+  handle('repo:action', async (repo: string, action: Action) => runAction(await requireRepo(repo), action))
+  handle('repo:isPublished', async (repo: string, sha: string) => isPublished(await requireRepo(repo), String(sha)))
+  handle('repo:uniqueCommits', async (repo: string, refNames: string[]) => uniqueCommits(await requireRepo(repo), Array.isArray(refNames) ? refNames.map(String) : []))
+  handle('repo:worktreeChanges', async (repo: string) => worktreeChanges(await requireRepo(repo)))
+  handle('repo:blame', async (repo: string, rev: string | null, path: string) => blame(await requireRepo(repo), rev ? String(rev) : null, String(path)))
+  handle('repo:fileHistory', async (repo: string, rev: string | null, path: string) => fileHistory(await requireRepo(repo), rev ? String(rev) : null, String(path)))
   handle('repo:savePatch', async (repo: string, sha: string) => {
-    const info = requireRepo(repo)
+    const info = await requireRepo(repo)
     const patch = await formatPatch(info, String(sha))
     const subject = /^Subject: (?:\[PATCH[^\]]*\] )?(.*)$/m.exec(patch)?.[1] ?? 'commit'
     const slug = subject.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'commit'
@@ -229,7 +240,7 @@ function registerIpc(): void {
 
 function buildMenu(): void {
   const template: MenuItemConstructorOptions[] = [
-    { role: 'appMenu' },
+    ...(isMac ? [{ role: 'appMenu' } as MenuItemConstructorOptions] : []),
     {
       label: 'File',
       submenu: [
@@ -243,7 +254,7 @@ function buildMenu(): void {
           }
         },
         { type: 'separator' },
-        { role: 'close' }
+        isMac ? { role: 'close' } : { role: 'quit' }
       ]
     },
     { role: 'editMenu' },
@@ -274,8 +285,8 @@ function createWindow(): void {
     minHeight: 560,
     show: false,
     title: 'Branchline',
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 14, y: 12 },
+    // Only macOS draws its window buttons over the page; elsewhere keep the native frame.
+    ...(isMac ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 14, y: 12 } } : {}),
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#14161a' : '#ffffff',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
