@@ -1067,6 +1067,47 @@ code,
 .body {
   margin-top: 8px;
   color: var(--text-dim);
+  user-select: text;
+  overflow-wrap: anywhere;
+}
+
+.body p,
+.body ul,
+.body ol,
+.body pre {
+  margin: 0;
+}
+
+/* Higher specificity than the reset above, so every block after the first gets its gap. */
+.body > :not(:first-child) {
+  margin-top: 8px;
+}
+
+.body ul,
+.body ol {
+  padding-left: 18px;
+}
+
+.body li + li {
+  margin-top: 3px;
+}
+
+/* Indented code in a message keeps its own line breaks and scrolls sideways if it must. */
+.body pre.code {
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.body .trailers {
+  color: var(--text-faint);
+  font-size: 11.5px;
+}
+
+.body .trailers span {
+  display: block;
 }
 
 .detail-pills {

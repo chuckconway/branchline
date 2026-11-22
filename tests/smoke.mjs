@@ -97,6 +97,18 @@ try {
   await page.locator('.diff-bar .btn', { hasText: 'Graph' }).click()
   check(!(await page.locator('.diff-pane').isVisible()), 'Graph button returns from the diff')
 
+  // --- A message wrapped at 72 columns is re-flowed to the panel's width
+  await row('Add util module').click()
+  const msgBody = page.locator('[data-message-body]')
+  await msgBody.waitFor()
+  check((await msgBody.locator('p').first().textContent()) === 'Helpers shared by the login form and the search code, kept in one place so they can be tested on their own.', 'a wrapped paragraph in a commit message reads as one paragraph')
+  check(
+    JSON.stringify(await msgBody.locator('li').allTextContents()) === JSON.stringify(['add(a, b) for now, with room for more arithmetic later', 'No dependencies']),
+    'a wrapped list item reads as one item'
+  )
+  check((await msgBody.locator('.trailers span').allTextContents()).join('|') === 'Reviewed-by: Grace Hopper <grace@example.com>', 'trailers stay on their own lines')
+  await shot(page, 'commit-message')
+
   // --- Merge commit and parent navigation
   await row("Merge branch 'feature/login'").click()
   await page.waitForFunction(() => document.querySelector('.kicker')?.textContent?.includes('Merge commit'))

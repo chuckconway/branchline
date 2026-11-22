@@ -1,5 +1,6 @@
 import { Archive, ChevronDown, Copy, Ellipsis, GitBranch, GitCommitHorizontal, Minus, Plus, TriangleAlert } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
+import { messageBlocks } from '../../shared/message'
 import type { Action, Commit, CommitDetail, FileChange } from '../../shared/types'
 import { fullDate, plural, shortSha, splitPath } from './format'
 import { Spinner, menuBelow } from './ui'
@@ -147,6 +148,33 @@ interface CommitPanelProps {
   onMore: (x: number, y: number) => void
 }
 
+/** A commit message body, re-flowed so the panel's width does the wrapping. */
+function MessageBody({ body }: { body: string }): ReactNode {
+  return (
+    <div className="body" data-message-body>
+      {messageBlocks(body).map((b, i) =>
+        b.kind === 'paragraph' ? (
+          <p key={i}>{b.text}</p>
+        ) : b.kind === 'list' ? (
+          b.ordered ? (
+            <ol key={i}>{b.items.map((t, j) => <li key={j}>{t}</li>)}</ol>
+          ) : (
+            <ul key={i}>{b.items.map((t, j) => <li key={j}>{t}</li>)}</ul>
+          )
+        ) : b.kind === 'code' ? (
+          <pre key={i} className="code">{b.text}</pre>
+        ) : (
+          <p key={i} className="trailers">
+            {b.lines.map((l, j) => (
+              <span key={j}>{l}</span>
+            ))}
+          </p>
+        )
+      )}
+    </div>
+  )
+}
+
 export function CommitPanel(p: CommitPanelProps): ReactNode {
   const { commit: c, detail: d } = p
   const body = d ? d.message.slice(d.message.indexOf('\n') + 1).trim() : ''
@@ -165,7 +193,7 @@ export function CommitPanel(p: CommitPanelProps): ReactNode {
             <CopyButton text={c.sha} label="Copy full SHA" />
           </div>
           <h2 className="subject">{c.subject}</h2>
-          {hasBody && <pre className="body">{body}</pre>}
+          {hasBody && <MessageBody body={body} />}
           {p.pills && (
             <div className="detail-pills">
               {p.pills.map((pill) => (

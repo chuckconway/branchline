@@ -60,7 +60,21 @@ export function buildFixture(root: string): { repo: string; worktree: string } {
   commit('Initial commit')
 
   write('src/util.ts', 'export const add = (a: number, b: number): number => a + b\n')
-  commit('Add util module')
+  // Wrapped at 72 columns the way git messages usually are, so the UI's re-flowing is tested.
+  commit(
+    [
+      'Add util module',
+      '',
+      'Helpers shared by the login form and the search code, kept in one',
+      'place so they can be tested on their own.',
+      '',
+      '- add(a, b) for now, with room for more arithmetic',
+      '  later',
+      '- No dependencies',
+      '',
+      'Reviewed-by: Grace Hopper <grace@example.com>'
+    ].join('\n')
+  )
 
   g('checkout', '-q', '-b', 'feature/login')
   write('src/login.ts', "export function login(user: string): boolean {\n  return user.length > 0\n}\n")
