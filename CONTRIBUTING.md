@@ -84,3 +84,15 @@ Two product rules every change must keep:
   asks first, and says what will be lost.
 
 The design notes are in `docs/design.md`.
+
+## The website
+
+`docs/` is the website, served by GitHub Pages from `main` at
+https://chuckconway.github.io/branchline/. `docs/_config.yml` keeps the developer docs
+(`design.md`, `superpowers/`) out of it. The download buttons link to
+`releases/latest/download/<file>`, so package names carry no version number and the page needs
+no change for a new release.
+
+`npm run shots` rebuilds the app and regenerates the screenshots in `docs/images`, light and
+dark, from the same scripted repository the smoke test uses. It needs a Retina display for the
+2x images the site expects.

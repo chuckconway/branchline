@@ -1,0 +1,4 @@
+# GitHub Pages serves this folder as the website. Keep the developer docs out of it.
+exclude:
+  - design.md
+  - superpowers

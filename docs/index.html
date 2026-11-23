@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Branchline: a git history you can click through</title>
+<meta name="description" content="A free, open-source desktop app for your git history: the commit graph, diffs, blame, and every branch and history action a click away. For macOS and Linux.">
+<meta property="og:title" content="Branchline">
+<meta property="og:description" content="A free, open-source desktop app for your git history: the commit graph, diffs, blame, and every branch and history action a click away.">
+<meta property="og:image" content="https://chuckconway.github.io/branchline/icon.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero">
+  <nav class="nav"><div class="wrap"><a href="#get">Download</a><a href="https://github.com/chuckconway/branchline">GitHub</a></div></nav>
+  <div class="wrap">
+    <img class="icon" src="icon.svg" width="120" height="120" alt="Branchline icon: a blue branch line with a pink branch curving off it and merging back">
+    <h1>Branchline</h1>
+    <p class="lede">Your git history as a graph you can click through: every branch, diff, and blame line, and every action one click away.</p>
+    <div class="actions">
+      <a class="button primary" id="download" href="https://github.com/chuckconway/branchline/releases/latest/download/Branchline-mac-arm64.dmg">Download for Mac</a>
+      <a class="button secondary" href="https://github.com/chuckconway/branchline">View on GitHub</a>
+    </div>
+    <p class="note" id="download-note">Free and open source · macOS 13 or later, Apple silicon · <a href="#get">Intel and Linux</a></p>
+    <div class="shot">
+      <picture><source srcset="images/graph-dark.png" media="(prefers-color-scheme: dark)"><img src="images/graph.png" width="2560" height="1520" alt="Branchline's main window: the branch sidebar, a commit graph with coloured lanes and branch labels, and a commit's message and files"></picture>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap split">
+    <div>
+      <h2>See what changed, and why</h2>
+      <p class="intro">Pick a commit to read its message and every file it touched. Diffs come unified or side by side, with syntax colouring and the changed words marked inside each line.</p>
+      <p class="intro">For any file, follow its history across renames, or open blame to see who last changed each line and in which commit.</p>
+    </div>
+    <picture class="figure"><source srcset="images/diff-crop-dark.png" media="(prefers-color-scheme: dark)"><img src="images/diff-crop.png" width="2100" height="800" alt="A side-by-side diff with the changed words highlighted"></picture>
+  </div>
+</section>
+
+<section class="soft">
+  <div class="wrap">
+    <h2>Everything a day with git needs</h2>
+    <p class="intro">Branchline runs the git already on your machine, so it works with the repositories, remotes, and credentials you already have.</p>
+    <div class="grid">
+      <div class="card"><div class="glyph lane-blue"></div><h3>The whole graph</h3><p>Lanes, branch and tag labels, stashes, worktrees, and a row for uncommitted changes, with search across commits.</p></div>
+      <div class="card"><div class="glyph lane-pink"></div><h3>Stage and commit</h3><p>Stage or unstage whole files, write the message, and commit. Fetch, pull, push, or publish a new branch.</p></div>
+      <div class="card"><div class="glyph lane-green"></div><h3>Edit history safely</h3><p>Cherry-pick, revert, rebase, reset, reword, drop, or move a commit. If a cherry-pick, rebase, or edit hits a conflict, everything is put back as it was.</p></div>
+      <div class="card"><div class="glyph lane-blue"></div><h3>Branches and tags</h3><p>Check out, create, or delete branches, locally or on the remote. Tag a commit, annotated or not, and push the tag.</p></div>
+      <div class="card"><div class="glyph lane-pink"></div><h3>Worktrees</h3><p>Create a worktree from any commit and open it in a new tab beside the one you're in.</p></div>
+      <div class="card"><div class="glyph lane-green"></div><h3>Tabs for every repo</h3><p>Keep several repositories open at once. Branchline reopens them where you left off.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap split reverse">
+    <picture class="figure"><source srcset="images/menu-crop-dark.png" media="(prefers-color-scheme: dark)"><img src="images/menu-crop.png" width="1284" height="1518" alt="The commit menu, listing cherry-pick, revert, rebase, reset, and more"></picture>
+    <div>
+      <h2>No commands to remember</h2>
+      <p class="intro">Every action has a button or a menu item. Right-click a commit, a branch, or a file to see what you can do with it, or use the More button beside it.</p>
+      <p class="intro">Actions that can't run right now are greyed out, and when git refuses, Branchline says why in plain words.</p>
+    </div>
+  </div>
+</section>
+
+<section class="soft">
+  <div class="wrap privacy">
+    <div>
+      <h2>Local by design</h2>
+      <p class="intro">No account, no subscription, no telemetry. Branchline has no server of its own.</p>
+    </div>
+    <div class="card">
+      <h3>What leaves your computer</h3>
+      <ul>
+        <li><strong>Only what git sends:</strong> fetch, pull, and push talk to your remotes, using your own git and credentials.</li>
+        <li><strong>Nothing of its own:</strong> no update checks, crash reports, or usage data.</li>
+        <li><strong>Everything else</strong>, from your code to your history, stays on your computer.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="get">
+  <div class="wrap">
+    <h2>Get Branchline</h2>
+    <p class="intro">Branchline needs git 2.31 or newer. If git is missing or too old, it says so at the top of the window. Older versions of Branchline are on the <a href="https://github.com/chuckconway/branchline/releases">releases page</a>.</p>
+    <div class="downloads">
+      <div class="card">
+        <h3>macOS 13 or later</h3>
+        <p>Signed and notarized by Apple. Open the disk image and drag Branchline to Applications.</p>
+        <p class="links">
+          <a href="https://github.com/chuckconway/branchline/releases/latest/download/Branchline-mac-arm64.dmg">Apple silicon</a>
+          <a href="https://github.com/chuckconway/branchline/releases/latest/download/Branchline-mac-x64.dmg">Intel</a>
+        </p>
+      </div>
+      <div class="card">
+        <h3>Linux</h3>
+        <p>An AppImage: make it executable, then run it. Needs GTK 3, which desktop distributions already have.</p>
+        <p class="links">
+          <a href="https://github.com/chuckconway/branchline/releases/latest/download/Branchline-linux-x86_64.AppImage">x86-64</a>
+          <a href="https://github.com/chuckconway/branchline/releases/latest/download/Branchline-linux-arm64.AppImage">ARM64</a>
+        </p>
+      </div>
+      <div class="card">
+        <h3>Windows</h3>
+        <p>Not supported yet. An experimental installer is on the releases page for anyone who wants to try it.</p>
+      </div>
+    </div>
+    <p class="intro">Or build it from source with Node.js 24:</p>
+<pre><code>git clone https://github.com/chuckconway/branchline.git
+cd branchline
+npm install
+npx install-electron
+npm run dev</code></pre>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Branchline is free and open source under the MIT License.</span>
+    <span><a href="https://github.com/chuckconway/branchline">GitHub</a> · <a href="https://github.com/chuckconway/branchline/releases">Releases</a> · <a href="https://github.com/chuckconway/branchline/issues">Report an issue</a></span>
+  </div>
+</footer>
+
+<script>
+  // The hero button defaults to the Mac download; offer the Linux AppImage on Linux instead.
+  // Browsers do not reliably tell Apple silicon from Intel, so both stay listed under Get Branchline.
+  if (/Linux/.test(navigator.platform) && !/Android/.test(navigator.userAgent)) {
+    const arm = /aarch64|arm/i.test(navigator.platform)
+    document.getElementById('download').textContent = 'Download for Linux'
+    document.getElementById('download').href = 'https://github.com/chuckconway/branchline/releases/latest/download/Branchline-linux-' + (arm ? 'arm64' : 'x86_64') + '.AppImage'
+    document.getElementById('download-note').innerHTML = 'Free and open source · AppImage, ' + (arm ? 'ARM64' : 'x86-64') + ' · <a href="#get">Other platforms</a>'
+  }
+</script>
+</body>
+</html>

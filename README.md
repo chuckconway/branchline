@@ -2,7 +2,9 @@
 
 A local git graph viewer and history tool: no account, no subscription, no telemetry.
 
-![The commit graph](docs/images/graph.png)
+**[Website and downloads](https://chuckconway.github.io/branchline/)**
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/graph-dark.png"><img alt="The commit graph" src="docs/images/graph.png"></picture>
 
 ## Install
 
@@ -10,8 +12,11 @@ Branchline runs the `git` already on your machine, and needs git 2.31 or newer. 
 missing or too old, the app says so at the top of the window.
 
 - **macOS:** download the `.dmg` for Apple Silicon (`arm64`) or Intel (`x64`) from the
-  Releases page, open it, and drag Branchline to Applications.
-- **Linux:** download the `.AppImage` from the Releases page, then `chmod +x` it and run it.
+  [Releases page](https://github.com/chuckconway/branchline/releases/latest), open it, and drag
+  Branchline to Applications.
+- **Linux:** download the `.AppImage` from the
+  [Releases page](https://github.com/chuckconway/branchline/releases/latest), then `chmod +x` it
+  and run it.
   It needs GTK 3, which desktop distributions already have.
 - **Windows:** not supported yet; builds are experimental.
 
@@ -23,11 +28,11 @@ To build it yourself, see [CONTRIBUTING.md](CONTRIBUTING.md).
 - Sidebar of local branches, remotes, worktrees, stashes and tags, with a filter.
 - Commit details and per-file diffs, unified or side by side, with syntax colouring.
 
-  ![A side-by-side diff](docs/images/diff.png)
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/diff-dark.png"><img alt="A side-by-side diff" src="docs/images/diff.png"></picture>
 
 - File history (following renames) and blame for any changed file.
 
-  ![Blame for a file](docs/images/blame.png)
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/blame-dark.png"><img alt="Blame for a file" src="docs/images/blame.png"></picture>
 
 - Stage, unstage and commit; fetch, pull (fast-forward only), push or publish; check out a
   branch or commit; create a branch; stash and pop.
@@ -35,7 +40,7 @@ To build it yourself, see [CONTRIBUTING.md](CONTRIBUTING.md).
   to it, edit its message, drop it, move it, create a worktree from it, copy its SHA or its
   link on the remote, save it as a patch, or tag it (optionally annotated, optionally pushed).
 
-  ![The commit menu](docs/images/menu.png)
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/menu-dark.png"><img alt="The commit menu" src="docs/images/menu.png"></picture>
 
 - Right-click a branch, in the sidebar or on its label in the graph, to check it out, copy
   its name, or delete it locally, on the remote, or both.
