@@ -713,7 +713,7 @@ git log --oneline main..release-prep
 - The decisions and steps that are theirs:
   1. Where the repository lives (account or organisation), and the go-ahead to create it and push. Then the README Releases link and a `.deb` target can be added.
   2. The notarization commands from Task 5 Step 5, and the five repository secrets `release.yml` reads.
-  3. Whether `app.branchline.desktop` is the bundle id they want. It cannot change after the first public release without orphaning people's settings.
-  4. Whether the LICENSE should name them instead of "Branchline contributors".
+  3. The bundle id (now `com.cconway.branchline`). Settings live under the product name, not the id, but macOS permissions, the Windows taskbar identity and the installer's upgrade key all follow the id, so it must not change after the first public release.
+  4. The LICENSE names the owner.
   5. Whether to merge `release-prep` into `main`.
 - Not in this plan: in-app update checks, a Homebrew cask, a real Windows port.

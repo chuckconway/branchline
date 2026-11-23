@@ -17,7 +17,7 @@
     "dist:local": "electron-vite build && electron-builder --mac dir --arm64 -c.mac.identity=null -c.mac.notarize=false && codesign --force --deep --sign - release/mac-arm64/Branchline.app"
   },
   "build": {
-    "appId": "app.branchline.desktop",
+    "appId": "com.cconway.branchline",
     "productName": "Branchline",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "files": [
@@ -113,6 +113,6 @@
     "vite": "^8.3.8",
     "vitest": "^5.1.1"
   },
-  "author": "Branchline contributors",
+  "author": "Charles Conway",
   "license": "MIT"
 }
