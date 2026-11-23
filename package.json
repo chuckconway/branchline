@@ -2,7 +2,7 @@
   "name": "branchline",
   "productName": "Branchline",
   "desktopName": "branchline.desktop",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "A fast, local git graph viewer and history tool. No account, no subscription.",
   "private": true,
   "main": "out/main/index.js",
