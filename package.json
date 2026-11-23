@@ -14,12 +14,16 @@
     "test": "vitest run",
     "smoke": "node tests/smoke.mjs",
     "dist": "electron-vite build && electron-builder",
+    "shots": "electron-vite build && node scripts/site-shots.mjs",
     "dist:local": "electron-vite build && electron-builder --mac dir --arm64 -c.mac.identity=null -c.mac.notarize=false && codesign --force --deep --sign - release/mac-arm64/Branchline.app"
   },
   "build": {
     "appId": "com.cconway.branchline",
     "productName": "Branchline",
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "artifactName": "${productName}-${os}-${arch}.${ext}",
+    "toolsets": {
+      "appimage": "1.0.3"
+    },
     "files": [
       "out/**/*",
       "package.json"
