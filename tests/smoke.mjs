@@ -35,9 +35,13 @@ const appEnv = { ...process.env }
 delete appEnv.DEVELOPER_DIR
 
 // SMOKE_APP points at a packaged binary; otherwise the build in out/ runs under Electron.
+// SMOKE_NO_SANDBOX is for containers. SMOKE_NO_GPU is for virtual displays with no GPU device,
+// such as GitHub's Linux runners: there the GPU process fails to start, Chromium restarts it,
+// and a screenshot taken meanwhile fails with "Unable to capture screenshot".
+const flags = [...(process.env.SMOKE_NO_SANDBOX ? ['--no-sandbox'] : []), ...(process.env.SMOKE_NO_GPU ? ['--disable-gpu'] : [])]
 const launch = (extra = {}) =>
   electron.launch({
-    ...(process.env.SMOKE_APP ? { executablePath: process.env.SMOKE_APP, args: process.env.SMOKE_NO_SANDBOX ? ['--no-sandbox'] : [] } : { args: [root, ...(process.env.SMOKE_NO_SANDBOX ? ['--no-sandbox'] : [])] }),
+    ...(process.env.SMOKE_APP ? { executablePath: process.env.SMOKE_APP, args: flags } : { args: [root, ...flags] }),
     env: { ...appEnv, BRANCHLINE_USER_DATA: join(artifacts, 'userdata'), BRANCHLINE_OPEN: repo, ...extra }
   })
 let app = await launch()

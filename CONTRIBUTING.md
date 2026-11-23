@@ -11,7 +11,9 @@ npx install-electron      # fetches the Electron binary if the install step did 
 ```
 
 On Linux, Electron also needs GTK 3 (`libgtk-3-0` on Debian and Ubuntu). To run the smoke
-test without a display, install `xvfb` and run it as `SMOKE_NO_SANDBOX=1 xvfb-run -a npm run smoke`.
+test without a display, install `xvfb` and run it as
+`SMOKE_NO_SANDBOX=1 SMOKE_NO_GPU=1 xvfb-run -a npm run smoke`. `SMOKE_NO_GPU` turns off the GPU,
+which fails to start on virtual displays with no GPU device, such as GitHub's runners.
 
 ## Running things
 

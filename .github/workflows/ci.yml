@@ -30,19 +30,12 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: Display diagnostics (temporary)
-        if: runner.os == 'Linux'
-        run: |
-          xvfb-run -a bash -c 'echo DISPLAY=$DISPLAY; xdpyinfo 2>/dev/null | grep -E "dimensions|depth of root" || echo no-xdpyinfo'
-          echo "WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-} XDG_SESSION_TYPE=${XDG_SESSION_TYPE:-}"
-          dpkg -l | grep -Ei "mesa|vulkan|libgl1" | awk '{print $2, $3}' | head -20
       - name: Smoke test (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run -a npm run smoke
         env:
           SMOKE_NO_SANDBOX: '1'
-          DEBUG: pw:browser*
-          ELECTRON_ENABLE_LOGGING: '1'
+          SMOKE_NO_GPU: '1'
       - name: Smoke test (macOS, Windows)
         if: runner.os != 'Linux'
         run: npm run smoke
