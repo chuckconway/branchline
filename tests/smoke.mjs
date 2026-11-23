@@ -87,7 +87,9 @@ try {
   await page.locator('.commit-box button').click()
   await row('Smoke test commit').waitFor()
   check((await page.locator('[data-tool=push] .tool-badge').textContent()) === '2', 'commit lands and push shows 2 ahead')
-  check((await page.locator('.commit-box textarea').inputValue()) === '', 'message box clears after committing')
+  // The graph refreshes before the box clears, so wait for it rather than reading it once.
+  const cleared = await page.waitForFunction(() => document.querySelector('.commit-box textarea')?.value === '', null, { timeout: 3000 }).then(() => true, () => false)
+  check(cleared, 'message box clears after committing')
 
   // --- Commit detail and a committed diff with syntax colouring
   await row('Require a password').click()
